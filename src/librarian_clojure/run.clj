@@ -1,14 +1,19 @@
 (ns librarian-clojure.run
   "Bootstrap for 'lein run'"
-  (:use librarian-clojure.core
-        [clojure.java.browse :only (browse-url)])
-  (:require [librarian-clojure.db :as db]
-            [librarian-clojure.security :as security]))
+  (:require  [librarian-clojure.core :refer (app)]
+             [clojure.java.browse :refer (browse-url)]
+             [librarian-clojure.config :refer [*env*]]
+             [librarian-clojure.db :as db]
+             [librarian-clojure.security :as security]
+             [ring.adapter.jetty :refer (run-jetty)]))
 
 (defn- parse-port [[port] & args]
   (if-let [port-str (or port (get (System/getenv) "PORT"))]
     (Integer/parseInt port-str)
     8080))
+
+(defn start-server [port]
+  (run-jetty #'app {:port port :join? false}))
 
 (defn- start-and-browse [args url]
   (let [port (parse-port args)]
@@ -19,18 +24,19 @@
   (let [port (parse-port args)]
     (start-server port)))
 
+(defn init
+  "Initialize environment (wish it'd go away one day)"
+  [env]
+  (binding [*env* env]
+    (db/init)
+    (security/init)))
+
 (defn run-local [& args]
-  (db/init :local)
-  (security/init)
+  (init :local)
   (start-and-browse args "/"))
 
-(defn run-local-ring [& args]
-  (db/init :local)
-  (security/init))
-
 (defn run-heroku [& args]
-  (db/init :heroku)
-  (security/init)
+  (init :heroku)
   (start args))
 
 (defn -main [] 

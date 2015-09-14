@@ -1,22 +1,17 @@
-<!--
-   - Heavily inspired by https://github.com/tvaughan/mametipsum
-   - http://twitter.github.com/bootstrap/examples/hero.html contributed a lot recently
-   -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Librarian (in Clojure)</title>
+  <meta charset="utf-8">
+  <title>Librarian (in Clojure) :: Book</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Book manager for Warszawa Java User Group in Clojure">
-  <meta name="author" content="Konrad Garus, Jacek Laskowski">
   <link rel="stylesheet" href="/css/bootstrap.min.css">
   <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
   <style type="text/css">
-  body {
-    padding-top: 60px;
-    padding-bottom: 40px;
-  }
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
   </style>
   <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
   <!--[if lt IE 9]>
@@ -50,9 +45,9 @@
             </ul>
             <!-- Found at http://www.google.com/analytics/ -->
             <ul id="enlive-login-create-account-buttons" class="nav">
-              <li><button class="btn" data-target="#login-form-modal" data-toggle="modal">Log in</button></li>
+              <li><button class="btn" id="btn-login">Log in</button></li>
               <li><a href="#">or</a></li>
-              <li><button class="btn" data-target="#signup-form-modal" data-toggle="modal">Create account</button>
+              <li><button class="btn" id="btn-create-account">Create account</button></li>
             </ul>
           </div>
         </div>
@@ -60,49 +55,19 @@
     </div>
   </div>
   
-  <div class="container">
-    <!-- Main hero unit for a primary marketing message or call to action -->
-    <div id="enlive-hero-unit" class="hero-unit">
-      <h1>Librarian-Clojure</h1>
-      <p>Book manager for <a href="http://warszawa.jug.pl">Warszawa Java User Group</a> written in <a href="http://clojure.org">Clojure</a>.</p>
-      <p><a href="https://github.com/jaceklaskowski/librarian-clojure" class="btn btn-primary btn-large">Learn more (at GitHub) &raquo;</a></p>
-    </div>
-    
+  <div class="container">    
     <section id="main">
       <div class="row">
         <div class="span12">
-          <h1>Book list</h1>
+          <h1>{{title}} book page</h1>
           <blockquote>
-            <p>The screen shows the list of available books</p>
+            <p>The screen shows the book's details</p>
             <small>The Helper</small>
           </blockquote>
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th width="5%">Id</th>
-                <th width="30%">Author</th>
-                <th width="30%">Title</th>
-                <th id="enlive-user-actions-header">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="book-list">
-              <tr>
-                <td>id</td>
-                <td>author</td>
-                <td><a href="/books/{{id}}">{{title}}</a></td>
-                <td>
-                  <button class="btn btn-primary">
-                    <i class="icon-star icon-white"></i> Review
-                  </button>
-                  <span class="badge">1</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </section>
-    <div id="login-form-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div id="login-form">
       <form class="form-signin">
         <h2 class="form-signin-heading">Please sign in</h2>
         <input type="text" class="input-block-level" name="login" value="admin" placeholder="Email address" required>
@@ -111,12 +76,10 @@
           <input type="checkbox" value="remember-me"> Remember me
         </label>
         <button class="btn btn-large btn-primary" type="submit" id="btn-signin">Sign in</button>
-        <div class="errors alert alert-error">
-          <a class="close" data-dismiss="alert">x</a>
-        </div>
+        <div class="errors alert alert-error"></div>
       </form>
     </div>
-    <div id="signup-form-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div id="signup-form">
       <form class="form-signin">
         <h2 class="form-signin-heading">Create account</h2>
         <input type="text" class="input-block-level" name="login" value="" placeholder="Email address">
@@ -140,10 +103,13 @@
   <script type="text/javascript" src="//code.jquery.com/jquery-latest.js"></script>
   <script type="text/javascript" src="/ember-0.9.3.min.js"></script>
   <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/js/buckwilson-Lightbox_me-8ff1a2b/jquery.lightbox_me.js"></script>
+  <script type="text/javascript" src="/js/librarian.js"></script>
   <script type="text/javascript" src="/js/librarian-cljs.js"></script>
   <script type="text/javascript">
   <!--//
-    librarian_clojure.frontend.init_front();
+    var librarian = new Librarian();
+    librarian.initFront();
   //-->
   </script>
   <script type="text/javascript">

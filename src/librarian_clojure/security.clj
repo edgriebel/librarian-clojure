@@ -1,76 +1,72 @@
 (ns librarian-clojure.security
-  (:import [jBCrypt BCrypt])
-  (:use [ring.util.response :only (redirect)])
-  (:require [sandbar.stateful-session :as session]
+  (:require [cemerick.friend.credentials :refer (hash-bcrypt)]
             [librarian-clojure.db :as db]
-            [librarian-clojure.security :as security]))
-
-;; BCrypt Helpers
-
-(defn crypt-password [pw]
-  (BCrypt/hashpw pw (BCrypt/gensalt 12)))
-
-(defn check-password [candidate crypt]
-  (BCrypt/checkpw candidate crypt))
-
-;; Init - creates admin/admin superuser
-
-(defn init []
+            [cemerick.friend :as friend]
+            [clojure.data.json :as json]))
+  
+(defn init
+  "Creates admin/admin superuser"
+  []
   (when-not (db/db-get-user "admin")
     (prn "Creating privileged admin/admin user")
-    (db/db-add-user "admin" (crypt-password "admin") [:admin])))
+    (db/db-add-user "admin" (hash-bcrypt "admin") [:admin])))
 
-;; Login/signup form
+(defn- success
+  "Auth helper"
+  [] {:successful true})
 
-(defn- success [] {:successful true})
+(defn- failure
+  "Auth helper"
+  [msg] {:successful false 
+         :errorDetail msg})
 
-(defn- failure [msg] {:successful false 
-                      :errorDetail msg})
+(defn get-user-by-login
+  "Assures that the returned data contain :username key for friend's identity."
+  [login]
+  (if-let [user-creds (db/db-get-user login)]
+    (-> user-creds
+        (assoc :username (:login user-creds)))))
 
-(defn log-in [login password request]
-  (if-let [user (db/db-get-user login)]
-    (when (check-password password (:password user))
-      (session/session-put! :librarian-user user)
-      (success))
-    (failure "Login failed")))
+(defn get-user [request]
+  "Request is passed explicitly - it's strongly encouraged by friend
+even though there's an option of using internal dynamic binding which
+should contain identity in the context current on-the-fly request."
+  (-> request friend/identity friend/current-authentication))
 
-(defn log-out []
-  (session/destroy-session!)
-  (success))
+(defn has-role? [request role]
+  (friend/authorized? [role] (friend/identity request)))
 
-(defn sign-up [login password request]
-  (if (db/db-get-user login)
+(defn login-failure-handler
+  "Auth handler"
+  [request]
+  {:body (-> (failure "Login failed") json/json-str)})
+
+(defn unauthorized-handler
+  "Auth handler"
+  [request]
+  {:status 403 :body "Access denied"})
+
+(defn signup-workflow-handler 
+  "Auth handler"
+  [login password success-fn]
+  (if (get-user-by-login login)
     (failure "Account exists")
     (do
-      (db/db-add-user login (crypt-password password))
-      (log-in login password request))))
+      (db/db-add-user login (hash-bcrypt password))
+      (success-fn (get-user-by-login login)))))
 
-;; Authorization
+(defn signup-handler
+  "Auth handler"
+  []
+  (success))
 
-(defn get-user [] 
-  (session/session-get :librarian-user))
+(defn login-handler
+  "Succesful login handler must be put under POST /login route."
+  []
+  (success))
 
-(defn has-role? [role]
-  (if-let [user (get-user)]
-    (contains? (:roles user) role)
-    false))
+(defn logout-handler
+  "Auth handler"
+  []
+  (success))
 
-;; Ring wrapper for policies
-
-(defn- authorize-line [request line]
-  (let [{uri :uri} request 
-        [pattern role] line]
-    (if (re-matches pattern uri)
-      (has-role? role)
-      true)))
-
-(defn- authorize-policy [request policy]
-  (empty? (filter false? (map #(authorize-line request %) policy))))
-
-;; TODO support fancy policies like "has one of roles", "has all of roles" etc.
-
-(defn wrap-security [handler policy]
-  (fn [request]
-    (if (authorize-policy request policy)
-      (handler request)
-      (redirect "/permission-denied"))))
